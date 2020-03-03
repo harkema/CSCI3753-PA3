@@ -56,8 +56,10 @@ int releaseMemory(sharedArray* s_array)
 
 int isArrayFull(sharedArray* s_array)
 {
+	//if the array is full, return true else return false
 	if((s_array->head == s_array->tail) && (s_array->array[s_array->head].contains != NULL))
 	{
+		printf("Error: Array is full\n");
 		return 1;
 	}
 	else
@@ -68,6 +70,14 @@ int isArrayFull(sharedArray* s_array)
 
 int addArrayItem(sharedArray* s_array, void* newItem)
 {
+
+	if(isArrayFull(s_array))
+	{
+
+			printf("Error: Cannot add item, array is full\n");
+			return -1;
+	}
+
 	//tail of shared array now points to new item
 	s_array->array[s_array->tail].contains = newItem;
 	s_array->tail = ((s_array->tail+1) % s_array->maxSize);
@@ -77,8 +87,9 @@ int addArrayItem(sharedArray* s_array, void* newItem)
 }
 
 
-void* createReqThread(void *threadArgument)
+void* createReqThread(void* threadArgument)
 {
+
 	struct reqThreadStruct * reqThreadStruct;
 	char hostName[1025];
 
@@ -88,7 +99,7 @@ void* createReqThread(void *threadArgument)
 	sharedArray* s_array;
 
 	//items in the array
-	char contains[1025];
+	char* contains;
 
 	long threadNumber;
 
@@ -111,7 +122,7 @@ void* createReqThread(void *threadArgument)
 
 	//start adding items to the shared array
 
-	printf("SIZE: %d", reqThreadStruct->dataFiles.size);
+	// printf("SIZE: %d", reqThreadStruct->dataFiles.size);
 
 	for(int i=0; i<reqThreadStruct->dataFiles.size; i++)
 	{
@@ -125,41 +136,43 @@ void* createReqThread(void *threadArgument)
 		while(fscanf(inputFilePtr, INPUTFS, hostName) > 0)
 		{
 					int completed = 0;
-					while(!completed)
+					int success = 0;
+					while(completed!=1)
 					{
 						pthread_mutex_lock(&readMutex);
 						pthread_mutex_lock(&writeSharedArray);
 
 						if(!isArrayFull(s_array))
 						{
+							contains = malloc(1024);
 
-							printf("Contains Size:%d\n", sizeof(contains));
-							printf("HostName Size:%d\n", sizeof(hostName));
+							// printf("Contains Size:%d\n", sizeof(contains));
+							// printf("HostName Size:%d\n", sizeof(hostName));
 
 							//destination, source, size
-							//bitch
 							strncpy(contains, hostName, 1025);
-
-							addArrayItem(s_array, contains);
 							completed = 1;
+
+
 						}
+
 						pthread_mutex_unlock(&writeSharedArray);
 						pthread_mutex_unlock(&readMutex);
-
 						if (!completed)
 						{
-							usleep((rand()%100)*100000);
+								sleep(5);
+
 						}
 
 					}
-				fclose(inputFilePtr);
 	 	}
+		fclose(inputFilePtr);
 	}
-		FILE *perfFile = fopen("performance.txt", "ab");
-		fprintf(perfFile, "Number for requester thread = %d\n", reqThreadId);
-		fclose(perfFile);
+	FILE *perfFile = fopen("performance.txt", "ab");
+	fprintf(perfFile, "Number for requester thread = %d\n", reqThreadId);
+	fclose(perfFile);
 
-		return NULL;
+	return NULL;
 }
 
 
@@ -174,6 +187,7 @@ int main(int argc, char* argv[])
 	//data files will start at argv[5] and continue
 
 	int filesToDo = (argc - 5);
+	printf("Total Files: %d\n", filesToDo);
 
 
 
@@ -202,7 +216,7 @@ int main(int argc, char* argv[])
 	sharedArray s_array;
 
 
-	sharedArrayInit(&s_array, 20);
+	sharedArrayInit(&s_array, 50);
 
 	printf("Shared Array Created Successfully\n");
 
@@ -227,17 +241,18 @@ int main(int argc, char* argv[])
 	//assume we're starting with one file/(max) thread
 	int filesPerThread[numberOfReqThreads];
 
-	//if there are more files than threads,
+	//if there are more files than threads
 	if(filesToDo > numberOfReqThreads)
 	{
+		//int remainingFiles = filesToDo;
 		int remainingFiles = filesToDo;
-
-		int filesPerThreadCount = filesToDo/numberOfReqThreads;
+		//int filesPerThreadCount = filesToDo/numberOfReqThreads;
+		int filesPerThreadCount = remainingFiles/numberOfReqThreads;
 
 		for(int i=0; i<numberOfReqThreads; i++)
 		{
 			filesPerThread[i] = filesPerThreadCount;
-			remainingFiles -= filesPerThreadCount;
+			remainingFiles = remainingFiles - filesPerThreadCount ;
 		}
 
 		filesPerThread[0] += remainingFiles;
@@ -255,38 +270,71 @@ int main(int argc, char* argv[])
 
 	for(threadCounter=0; threadCounter < numberOfReqThreads && threadCounter < MAX_REQUESTER_THREADS; threadCounter++)
 	{
-		//start accessing the shared array
-
-
+	// 	reqThreadStruct[threadCounter].s_array = &s_array;
+	// 	/* set the thread file zie to the file per thread, so we know how much to work with */
+	// 	reqThreadStruct[threadCounter].dataFiles.size = filesPerThread[threadCounter];
+	// 	/*and then the number of files each thread works on is equal to the files per thread per that thread */
+	// 	int numberOfFilesToRead = filesPerThread[threadCounter];
+	//
+	// 	for(int i = 0; i < numberOfFilesToRead; i++)
+	// 	{
+	// 		/* open that the files were going to work on the offset per the argumetn, give it read only permissions */
+	// 		reqThreadStruct[threadCounter].dataFiles.array[i] = fopen(argv[threadCounter+offset+5], "r");
+	// 		/* print the argument */
+	// 		printf("%s\n", argv[threadCounter+offset+5]);
+	// 		/* add the offset value by 1 */
+	// 		if(numberOfFilesToRead > 1 && i != numberOfFilesToRead - 1)
+	// 		{
+	// 			offset = offset + 1;
+	// 		}
+	//
+	// 	}
+	//
+	// 	/* thread counter eq to that thrad num */
+	// 	reqThreadStruct[threadCounter].threadNumber = threadCounter;
+	// 	/* we have the files serviced equal to the number of files */
+	// 	reqThreadStruct[threadCounter].servicedFilesCount = numberOfFilesToRead;
+	//
+	// }
+		printf("ThreadCounter:%d\n", threadCounter);		//start accessing the shared array
 		reqThreadStruct[threadCounter].s_array = &s_array;
 
 		reqThreadStruct[threadCounter].dataFiles.size = filesPerThread[threadCounter];
-
 		//numberofFilesTo read is incorrect
 		int numberOfFilesToRead = filesPerThread[threadCounter];
 
-
 		//begin reading files
+		//Issue when requesters > files
 
 		printf("NumberOfFiles:%d\n", numberOfFilesToRead);
 
+		//Number of files to read/thread
 		for(int i=0; i<numberOfFilesToRead; i++)
 		{
-			reqThreadStruct[threadCounter].dataFiles.array[i]=fopen(argv[5+offset+threadCounter],"r");
-			printf("Currently reading: %s\n", argv[5+offset+threadCounter]);
+			printf("Offset:%d\n", offset);
 
-			if(numberOfFilesToRead > 1 && i != numberOfFilesToRead - 1){
-				offset = offset + 1;
+			if(offset >= filesToDo)
+			{
+				offset = offset - 1;
+				reqThreadStruct[threadCounter].dataFiles.array[i]=fopen(argv[5+offset],"r");
+				printf("Currently reading: %s\n", argv[5+offset]);
+				break;
 			}
+			reqThreadStruct[threadCounter].dataFiles.array[i]=fopen(argv[5+offset],"r");
+			printf("Currently reading: %s\n", argv[5+offset]);
+			offset = offset+1;
 
 		 }
 
-		//set struct variables
-		reqThreadStruct[threadCounter].threadNumber = threadCounter;
-		reqThreadStruct[threadCounter].servicedFilesCount = numberOfFilesToRead;
 
-		reqId = pthread_create(&(reqThreads[threadCounter]), NULL, createReqThread, &(reqThreadStruct[threadCounter]));
+		 //set struct variables
+		 reqThreadStruct[threadCounter].threadNumber = threadCounter;
+		 reqThreadStruct[threadCounter].servicedFilesCount = numberOfFilesToRead;
 
+
+		 pthread_create(&reqThreads[threadCounter], NULL, createReqThread, &reqThreadStruct[threadCounter]);
+
+		 pthread_join(reqThreads[threadCounter], NULL);
 
 	}
 
