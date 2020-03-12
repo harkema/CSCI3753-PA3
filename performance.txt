@@ -1,3 +1,28 @@
+<<<<<<< HEAD
 Number for requester thread = 1
 Number for resolver threads = 2
 Total run time: 437007
+=======
+<<<<<<< HEAD
+Number for requester thread = 6884
+=======
+Number for requester thread = 9334
+Number for requester thread = 9374
+Number for requester thread = 9477
+Number for requester thread = 10082
+>>>>>>> 8af841cc47ecfbf020e94351ff418e23ae36d934
+Number for requester thread = 11366
+Number for requester thread = 11383
+Number for requester thread = 11384
+Number for requester thread = 11385
+Number for requester thread = 11388
+Number for requester thread = 11389
+Number for requester thread = 11390
+Number for requester thread = 11391
+Number for requester thread = 11392
+Number for requester thread = 11395
+Number for requester thread = 11396
+Number for requester thread = 11397
+Number for requester thread = 11398
+Number for requester thread = 11399
+>>>>>>> e0c095eaf3ff75abe7fbdffccfc2edff5f7852db
