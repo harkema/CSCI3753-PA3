@@ -1,0 +1,3 @@
+Number for requester thread = 1
+Number for resolver threads = 2
+Total run time: 437007
